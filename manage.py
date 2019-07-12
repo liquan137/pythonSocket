@@ -1,9 +1,9 @@
 from flask import Flask, render_template
 from flask_socketio import SocketIO, send, emit, ConnectionRefusedError, Namespace
-import rsa
 import sys
-import re
-import base64
+from Crypto import Random
+import json
+from Crypto.PublicKey import RSA
 
 print(sys.version)
 print(sys.getdefaultencoding())
@@ -39,7 +39,6 @@ socketio.on_event('key', handle_key, namespace='/chat')
 
 def handle_login(message):
     print('received login: ' + str(message))
-    send(message)
 
 
 socketio.on_event('login', handle_login, namespace='/chat')
@@ -47,20 +46,25 @@ socketio.on_event('login', handle_login, namespace='/chat')
 
 @socketio.on('login')
 def handle_login(message):
-    send(message)
-
+    emit('msg', json.dumps({'type': 'success', 'msg': '登录成功'}, ensure_ascii=False))
+    print(json.dumps({'type': 'success', 'msg': '登录成功'}, ensure_ascii=False))
 
 @socketio.on('key')
 def handle_key(message):
-    (pubkey, privkey) = rsa.newkeys(512)
-    pub = pubkey.save_pkcs1()
-    cry_file = open('cry_file.txt', 'w+')
-    pubfile = open('public.pem', 'w+')
-    pubfile.write(pub.decode('utf-8'))
-    cry_file.write(pub.decode('utf-8'))
-    pubfile.close()
-    print(pub.decode('utf-8'))
-    emit('key', pub.decode('utf-8'))
+    RANDOM_GENERATOR = Random.new().read
+    rsa = RSA.generate(1024, RANDOM_GENERATOR)
+    # master的秘钥对的生成
+    PRIVATE_PEM = rsa.exportKey()
+    with open('master-private.pem', 'w') as f:
+        f.write(PRIVATE_PEM.decode('utf-8'))
+    print
+    PRIVATE_PEM
+    PUBLIC_PEM = rsa.publickey().exportKey()
+    print
+    PUBLIC_PEM
+    with open('master-public.pem', 'w') as f:
+        f.write(PUBLIC_PEM.decode('utf-8'))
+    emit('key', PUBLIC_PEM.decode('utf-8'))
 
 
 if __name__ == '__main__':
