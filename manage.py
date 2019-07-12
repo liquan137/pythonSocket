@@ -5,6 +5,8 @@ from Crypto import Random
 import json
 from Crypto.PublicKey import RSA
 
+from application.sql import db
+
 print(sys.version)
 print(sys.getdefaultencoding())
 print(sys.getfilesystemencoding())
@@ -49,6 +51,7 @@ def handle_login(message):
     emit('msg', json.dumps({'type': 'success', 'msg': '登录成功'}, ensure_ascii=False))
     print(json.dumps({'type': 'success', 'msg': '登录成功'}, ensure_ascii=False))
 
+
 @socketio.on('key')
 def handle_key(message):
     RANDOM_GENERATOR = Random.new().read
@@ -66,6 +69,11 @@ def handle_key(message):
         f.write(PUBLIC_PEM.decode('utf-8'))
     emit('key', PUBLIC_PEM.decode('utf-8'))
 
-
+# 链接数据库
+con = db.connectdb()
+# 查询user表
+db.find(con, "SELECT * FROM `py_user` WHERE user=18027046690")
+# 关闭数据库连接
+db.closedb(con)
 if __name__ == '__main__':
     socketio.run(app)
