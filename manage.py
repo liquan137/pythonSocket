@@ -1,10 +1,11 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_socketio import SocketIO, send, emit, ConnectionRefusedError, Namespace
 import sys
 from Crypto import Random
 import json
 from Crypto.PublicKey import RSA
-
+import time
+from application.config import config
 from application.sql import db
 
 print(sys.version)
@@ -49,7 +50,7 @@ socketio.on_event('login', handle_login, namespace='/chat')
 @socketio.on('login')
 def handle_login(message):
     emit('msg', json.dumps({'type': 'success', 'msg': '登录成功'}, ensure_ascii=False))
-    print(json.dumps({'type': 'success', 'msg': '登录成功'}, ensure_ascii=False))
+    print(json.dumps(message, ensure_ascii=False))
 
 
 @socketio.on('key')
@@ -58,22 +59,33 @@ def handle_key(message):
     rsa = RSA.generate(1024, RANDOM_GENERATOR)
     # master的秘钥对的生成
     PRIVATE_PEM = rsa.exportKey()
-    with open('master-private.pem', 'w') as f:
-        f.write(PRIVATE_PEM.decode('utf-8'))
-    print
-    PRIVATE_PEM
+    # with open('master-private.pem', 'w') as f:
+    #     f.write(PRIVATE_PEM.decode('utf-8'))
+    # print
+    # PRIVATE_PEM
     PUBLIC_PEM = rsa.publickey().exportKey()
     print
-    PUBLIC_PEM
-    with open('master-public.pem', 'w') as f:
-        f.write(PUBLIC_PEM.decode('utf-8'))
+    # PUBLIC_PEM
+    # with open('master-public.pem', 'w') as f:
+    #     f.write(PUBLIC_PEM.decode('utf-8'))
+    ip = request.remote_addr
+    con = db.connectdb()
+    keyFind = db.find(con, "SELECT * FROM  `py_key` WHERE  `ip` =  " + "'" + ip + "'")
+    if keyFind == 'None':
+        print('创建密匙')
+        db.insert(con, 'py_key',
+                  [{'public_pen': PUBLIC_PEM.decode('utf-8'), 'private_pen': PRIVATE_PEM.decode('utf-8'),
+                    'create_time': time.time(), 'ip': ip}])
+    else:
+        db.update(con, 'py_key', [{'public_pen': PUBLIC_PEM.decode('utf-8'), 'private_pen': PRIVATE_PEM.decode('utf-8'),
+                                   'create_time': time.time()}], {'ip': ip, 'id': 27})
+        print('更新密匙')
+
+    db.closedb(con)
     emit('key', PUBLIC_PEM.decode('utf-8'))
 
-# 链接数据库
-con = db.connectdb()
-# 查询user表
-db.find(con, "SELECT * FROM `py_user` WHERE user=18027046690")
-# 关闭数据库连接
-db.closedb(con)
+
+
+
 if __name__ == '__main__':
     socketio.run(app)
