@@ -1,5 +1,5 @@
 from flask import Flask
-from .sql import db
+from .sql import db, sqlDb
 from .config import config
 
 app = Flask(__name__)
