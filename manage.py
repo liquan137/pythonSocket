@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, Response
+from flask_cors import CORS
 from flask_socketio import SocketIO, send, emit, ConnectionRefusedError, Namespace
 import sys
 from Crypto import Random
@@ -17,8 +18,8 @@ print(sys.getfilesystemencoding())
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
-print("开始创建数据表")
-sqlDb.start()
+# print("开始创建数据表")
+# sqlDb.start()
 
 
 @socketio.on('connect')
@@ -82,6 +83,7 @@ def handle_key(message):
     print(PRIVATE_PEM.decode('utf-8'))
     ip = request.remote_addr
     keyFind = sqlDb.py_key.select(sqlDb.py_key.q.ip == str(ip))
+    print(keyFind)
     if len(list(keyFind)) == 0:
         print('创建密匙')
         sqlDb.py_key(public_pen=PUBLIC_PEM.decode('utf-8'), private_pen=PRIVATE_PEM.decode('utf-8'),
@@ -94,6 +96,22 @@ def handle_key(message):
         print('更新密匙:' + str(keyFind))
         emit('key', PUBLIC_PEM.decode('utf-8'))
 
+# class JSONResponse(Response):
+#     @classmethod
+#     def force_type(cls, response, environ=None):
+#         if isinstance(response, (list, dict)):
+#             response = response
+#             response.headers['Access-Control-Allow-Credentials'] = 'true'
+#             response.headers['Access-Control-Allow-Origin'] = '*'
+#             response.headers['Access-Control-Allow-Methods'] = 'PUT,GET,POST,DELETE,OPTIONS'
+#             response.headers[
+#                 'Access-Control-Allow-Headers'] = 'Content-Type, X-Requested-With,Referer,Accept,Origin,User -Agent'
+#         return super(Response, cls).force_type(response, environ)
+
+
 
 if __name__ == '__main__':
-    socketio.run(app)
+    # CORS(app)
+    # socketio.response_class = JSONResponse
+    # app.response_class = JSONResponse
+    socketio.run(app, port=5000, debug=True, host='127.0.0.1')
