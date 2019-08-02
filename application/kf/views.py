@@ -221,9 +221,12 @@ def player():
     list = []
     html = ''
     head = '<tr><th>服务器</th><th>比赛时长</th><th>模式</th><th>被谁击杀</th><th>击杀你的玩家ID</th><th>行驶距离</th><th>存活时间</th><th>徒步距离</th><th>总伤害</th><th>击杀人数</th></tr>'
+    index = 0
     for match in player.matches:
         game = api.matches().get(api.matches().get(match.id))
         participant = game.rosters[0].participants[0]
+        print(participant)
+        index += 1
         # list.append({
         #     'mode': game.game_mode,
         #     'duration': game.duration,
